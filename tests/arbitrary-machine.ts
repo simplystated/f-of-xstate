@@ -14,7 +14,7 @@ describe("arbitraryMachine", () => {
     const error = jest.spyOn(global.console, "error");
 
     fc.assert(
-      fc.property(arbitraryMachine, ([machine]) => {
+      fc.property(arbitraryMachine, (machine) => {
         const m = createMachine({
           ...machine,
           predictableActionArguments: true,
