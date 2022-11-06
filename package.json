@@ -1,7 +1,7 @@
 {
-  "name": "@simplystated/mustupdate",
+  "name": "@simplystated/xstate-meta",
   "version": "0.1.0",
-  "description": "Update this description",
+  "description": "Tools for operating on xstate state machines as data, by Simply Stated",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
@@ -13,14 +13,14 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/simplystated/ts-template.git"
+    "url": "git+https://github.com/simplystated/xstate-meta.git"
   },
   "author": "Adam Berger <adam@simplystated.dev>",
-  "license": "UNLICENSED",
+  "license": "MIT",
   "bugs": {
-    "url": "https://github.com/simplystated/ts-template/issues"
+    "url": "https://github.com/simplystated/xstate-meta/issues"
   },
-  "homepage": "https://github.com/simplystated/ts-template#readme",
+  "homepage": "https://github.com/simplystated/xstate-meta#readme",
   "devDependencies": {
     "@types/jest": "^29.1.1",
     "@typescript-eslint/eslint-plugin": "^5.38.1",
