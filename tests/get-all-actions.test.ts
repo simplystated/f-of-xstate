@@ -2,7 +2,6 @@ import * as fc from "fast-check";
 import { createMachine } from "xstate";
 import { arbitraryMachine } from "../src/arbitrary-machine";
 import { getAllActions } from "../src/get-all-actions";
-import { getAllConditions } from "../src/get-all-conditions";
 
 describe("getAllActions", () => {
   it("should return all actions", () => {

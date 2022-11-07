@@ -52,7 +52,7 @@ export const getAllStatesFromDefinition = <
   definition: StateNodeDefinition<TContext, TStateSchema, TEvent>
 ): Array<StateNodeDefinition<TContext, TStateSchema, TEvent>> => {
   return [definition].concat(
-    !!definition.states
+    definition.states
       ? Object.keys(definition.states).flatMap((key: string) =>
           getAllStatesFromDefinition((definition.states as any)[key])
         )

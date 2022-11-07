@@ -71,7 +71,7 @@ describe("categorizeTransitions", () => {
           machine,
           states,
           isWildcardTransition,
-          ({ on, ...machine }) => {
+          ({ on: _, ...machine }) => {
             return {
               ...machine,
             };
@@ -98,7 +98,7 @@ describe("categorizeTransitions", () => {
           machine,
           states,
           isEventTransition,
-          ({ on, ...machine }) => {
+          ({ on: _, ...machine }) => {
             return {
               ...machine,
             };
@@ -125,7 +125,7 @@ describe("categorizeTransitions", () => {
           machine,
           states,
           isDelayedTransition,
-          ({ after, on, always, ...machine }) => {
+          ({ after: _, on: _, always: _, ...machine }) => {
             return {
               ...machine,
             };
@@ -152,7 +152,7 @@ describe("categorizeTransitions", () => {
           machine,
           states,
           isInvocationDoneTransition,
-          ({ invoke, ...machine }) => {
+          ({ invoke: _, ...machine }) => {
             return {
               ...machine,
             };
@@ -178,7 +178,7 @@ describe("categorizeTransitions", () => {
           machine,
           states,
           isInvocationErrorTransition,
-          ({ invoke, ...machine }) => {
+          ({ invoke: _, ...machine }) => {
             return {
               ...machine,
             };
@@ -204,7 +204,7 @@ describe("categorizeTransitions", () => {
           machine,
           states,
           isStateDoneTransition,
-          ({ states, ...machine }) => {
+          ({ states: _, ...machine }) => {
             // TODO: this is a bit cheap
             return {
               ...machine,
@@ -244,8 +244,9 @@ const testMutationProperty = (
   });
   const initialCategories = categorizeTransitions(getAllTransitions(m));
 
-  const existingTargets = categorizeTransitions(m.transitions)
-    [category].map((t) => (t as any).transition ?? t)
+  const categoryTransitions = categorizeTransitions(m.transitions)[category];
+  const existingTargets = categoryTransitions
+    .map((t) => (t as any).transition ?? t)
     .flatMap((t: TransitionDefinition<any, any>) =>
       t.target?.map((target) => target.id)
     )

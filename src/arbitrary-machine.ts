@@ -24,7 +24,7 @@ const machineDescriptorArbitrary: fc.Arbitrary<StateDescriptor> = fc.letrec(
         tie("parallelState")
       )
       .map(
-        (([type, name, children]: StateDescriptor): StateDescriptor => [
+        (([_type, name, children]: StateDescriptor): StateDescriptor => [
           "machine",
           name,
           children,
@@ -88,7 +88,7 @@ interface StateConfig {
   on?: Record<string, Array<EventConfig>>;
   always?: Array<EventConfig>;
   onDone?: Array<EventConfig>;
-  data?: Function;
+  data?: Function; // eslint-disable-line @typescript-eslint/ban-types
   invoke?: Array<InvokeConfig>;
 }
 
@@ -156,7 +156,8 @@ const eventMapStateUpdate = (stateIds: Array<string>) =>
       ...state,
       on: {
         ...state?.on,
-        [event.eventType]: (state?.on?.hasOwnProperty(event.eventType)
+        [event.eventType]: (state?.on &&
+        Object.prototype.hasOwnProperty.call(state.on, event.eventType)
           ? state.on[event.eventType]
           : []
         ).concat([event]),
@@ -170,7 +171,7 @@ const eventMapStateUpdate = (stateIds: Array<string>) =>
 
 const alwaysStateUpdate = (stateIds: Array<string>) =>
   eventArb(stateIds).map((event) => (state: StateConfig) => {
-    const { eventType, ...evt } = event;
+    const { eventType: _, ...evt } = event;
     return {
       state: {
         ...state,
@@ -185,7 +186,7 @@ const alwaysStateUpdate = (stateIds: Array<string>) =>
 
 const onDoneStateUpdate = (stateIds: Array<string>) =>
   eventArb(stateIds).map((event) => (state: StateConfig) => {
-    const { eventType, ...evt } = event;
+    const { eventType: _, ...evt } = event;
     return {
       state: {
         ...state,
@@ -269,16 +270,16 @@ const parallelStateUpdate = (stateIds: Array<string>) =>
     { maxLength: 3, depthIdentifier }
   );
 
-const historyStateUpdate = (stateIds: Array<string>) => fc.constant([]);
+const historyStateUpdate = (_stateIds: Array<string>) => fc.constant([]);
 
-const finalStateUpdate = (stateIds: Array<string>) =>
+const finalStateUpdate = (_stateIds: Array<string>) =>
   fc
     .tuple(
       fc.option(doneDataStateUpdate()),
       fc.array(invokeStateUpdate(), { maxLength: 3, depthIdentifier })
     )
     .map(([done, invokes]) =>
-      invokes.concat(!!done ? ([done] as any) : [])
+      invokes.concat(done ? ([done] as any) : [])
     ) as fc.Arbitrary<Array<Update>>;
 
 const stateUpdateForType = (stateIds: Array<string>, type: StateType) =>
@@ -314,6 +315,7 @@ const applyInPath = (
       actions,
       services,
     } = applyInPath(
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       { ...updateState, state: updateState.state.states![nextState] },
       path.slice(1),
       updates
