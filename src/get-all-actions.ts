@@ -33,5 +33,8 @@ export const getAllActionsFromDefinition = <
 >(
   definition: StateNodeDefinition<TContext, TStateSchema, TEvent>
 ): Array<ActionObject<TContext, TEvent>> =>
-  getAllStatesFromDefinition(definition)
-    .flatMap(state => state.entry.concat(state.exit).concat(state.transitions.flatMap(t => t.actions)))
+  getAllStatesFromDefinition(definition).flatMap((state) =>
+    state.entry
+      .concat(state.exit)
+      .concat(state.transitions.flatMap((t) => t.actions))
+  );

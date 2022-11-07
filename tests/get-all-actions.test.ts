@@ -7,7 +7,7 @@ import { getAllConditions } from "../src/get-all-conditions";
 describe("getAllActions", () => {
   it("should return all actions", () => {
     fc.assert(
-      fc.property(arbitraryMachine, ({ machine, actions}) => {
+      fc.property(arbitraryMachine, ({ machine, actions }) => {
         const m = createMachine({
           ...machine,
           predictableActionArguments: true,
