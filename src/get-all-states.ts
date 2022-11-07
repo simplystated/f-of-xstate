@@ -27,6 +27,26 @@ export const getAllStates = <
 ): Array<StateNodeDefinition<TContext, TStateSchema, TEvent>> =>
   getAllStatesFromDefinition(root.definition);
 
+export const getAllProperStates = <
+  TContext,
+  TStateSchema extends StateSchema<any>,
+  TEvent extends EventObject,
+  TStateMachine extends StateMachine<
+    TContext,
+    TStateSchema,
+    TEvent,
+    any,
+    any,
+    any
+  >,
+  TStateNode extends StateNode<TContext, TStateSchema, TEvent, any, any, any>
+>(
+  root: TStateMachine | TStateNode
+): Array<StateNodeDefinition<TContext, TStateSchema, TEvent>> =>
+  Object.values(root.definition.states).flatMap(
+    getAllStatesFromDefinition as any
+  );
+
 export const getAllStatesFromDefinition = <
   TContext,
   TStateSchema extends StateSchema<any>,
