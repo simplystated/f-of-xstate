@@ -125,7 +125,7 @@ describe("categorizeTransitions", () => {
           machine,
           states,
           isDelayedTransition,
-          ({ after, on, ...machine }) => {
+          ({ after, on, always, ...machine }) => {
             return {
               ...machine,
             };
@@ -244,16 +244,18 @@ const testMutationProperty = (
   });
   const initialCategories = categorizeTransitions(getAllTransitions(m));
 
-  const existingTargets = m.transitions
-    .filter(transitionFilter)
-    .flatMap((t) => t.target?.map((t) => t.id))
+  const existingTargets = categorizeTransitions(m.transitions)
+    [category].map((t) => (t as any).transition ?? t)
+    .flatMap((t: TransitionDefinition<any, any>) =>
+      t.target?.map((target) => target.id)
+    )
     .filter((x) => !!x) as Array<string>;
 
   const unusedTargets = setDifference(states, existingTargets);
 
   if (unusedTargets.length === 0) {
     if (existingTargets.length === 0) {
-      // we have nothing to remove...
+      // we have nothing to remove and nothing to add...
       return true;
     }
 
