@@ -156,6 +156,7 @@ const eventMapStateUpdate = (stateIds: Array<string>) =>
     events: [event.eventType],
     conditions: event.cond ? [event.cond] : [],
     actions: event.actions,
+    services: [],
   }));
 
 const alwaysStateUpdate = (stateIds: Array<string>) =>
@@ -169,6 +170,7 @@ const alwaysStateUpdate = (stateIds: Array<string>) =>
       events: [""],
       conditions: evt.cond ? [evt.cond] : [],
       actions: evt.actions,
+      services: [],
     };
   });
 
@@ -183,6 +185,7 @@ const onDoneStateUpdate = (stateIds: Array<string>) =>
       events: [`done.state.${state.id}`],
       conditions: evt.cond ? [evt.cond] : [],
       actions: evt.actions,
+      services: [],
     };
   });
 
@@ -197,6 +200,7 @@ const doneDataStateUpdate = () =>
       events: [],
       conditions: [],
       actions: [],
+      services: [],
     }));
 
 const invokeStateUpdate = () =>
@@ -215,6 +219,7 @@ const invokeStateUpdate = () =>
       events: [],
       conditions: [],
       actions: [],
+      services: invoke ? [invoke.src] : [],
     }));
 
 const standardStateUpdate = (stateIds: Array<string>) =>
@@ -283,6 +288,7 @@ interface UpdateState {
   events: Array<string>;
   conditions: Array<string>;
   actions: Array<string>;
+  services: Array<string>;
 }
 
 const applyInPath = (
@@ -297,6 +303,7 @@ const applyInPath = (
       events,
       conditions,
       actions,
+      services,
     } = applyInPath(
       { ...updateState, state: updateState.state.states![nextState] },
       path.slice(1),
@@ -306,6 +313,7 @@ const applyInPath = (
       events,
       conditions,
       actions,
+      services,
       state: {
         ...updateState.state,
         states: {
@@ -323,6 +331,7 @@ const applyInPath = (
       events: updateState.events.concat(next.events),
       conditions: updateState.conditions.concat(next.conditions),
       actions: updateState.actions.concat(next.actions),
+      services: updateState.services.concat(next.services),
     };
   }, updateState);
 };
@@ -332,6 +341,7 @@ export const arbitraryMachine: fc.Arbitrary<{
   events: Array<string>;
   conditions: Array<string>;
   actions: Array<string>;
+  services: Array<string>;
 }> = fc
   .array(machineDescriptorArbitrary, { minLength: 1 })
   .chain((stateDescriptors) => {
@@ -358,10 +368,16 @@ export const arbitraryMachine: fc.Arbitrary<{
         return pathsAndUpdates.reduce(
           (updateState: UpdateState, [path, updates]) =>
             applyInPath(updateState, path, updates),
-          { state: rootState, events: [], conditions: [], actions: [] }
+          {
+            state: rootState,
+            events: [],
+            conditions: [],
+            actions: [],
+            services: [],
+          }
         );
       })
-      .map(({ events, conditions, actions, state: machine }) => ({
+      .map(({ events, conditions, actions, services, state: machine }) => ({
         machine,
         events: dedup(events),
         conditions: dedup(conditions),
