@@ -5,9 +5,14 @@ const depthIdentifier = fc.createDepthIdentifier();
 
 type AnyStateNodeConfig = StateNodeConfig<any, any, any, any>;
 
+const isValidXStateStateName = (stateName: string) =>
+  stateName !== "__proto__" &&
+  stateName.indexOf("#") !== 0 &&
+  stateName.indexOf(".") !== 0;
+
 const stateNameArbitrary = fc
   .string({ minLength: 1 })
-  .filter((s) => /^[^#\.]+$/.test(s));
+  .filter(isValidXStateStateName);
 
 const machineDescriptorArbitrary: fc.Arbitrary<StateDescriptor> = fc.letrec(
   (tie) => ({
@@ -121,6 +126,10 @@ const createStates = (
     };
   }, {});
 
+// there are some event names that xstate just doesn't like...
+const isValidXStateEvent = (eventType: string) =>
+  ["constructor", "valueOf", "toString"].indexOf(eventType) < 0;
+
 const eventArb = (stateIds: Array<string>) =>
   fc
     .oneof(
@@ -130,7 +139,7 @@ const eventArb = (stateIds: Array<string>) =>
     )
     .chain((target) =>
       fc.record({
-        eventType: fc.string({ minLength: 1 }),
+        eventType: fc.string({ minLength: 1 }).filter(isValidXStateEvent),
         target:
           typeof target === "undefined"
             ? fc.constant(void 0)
@@ -342,6 +351,7 @@ export const arbitraryMachine: fc.Arbitrary<{
   conditions: Array<string>;
   actions: Array<string>;
   services: Array<string>;
+  states: Array<string>;
 }> = fc
   .array(machineDescriptorArbitrary, { minLength: 1 })
   .chain((stateDescriptors) => {
@@ -382,6 +392,8 @@ export const arbitraryMachine: fc.Arbitrary<{
         events: dedup(events),
         conditions: dedup(conditions),
         actions: dedup(actions),
+        services: dedup(services),
+        states: stateIds,
       }));
   }) as fc.Arbitrary<any>;
 

@@ -21,6 +21,9 @@ describe("arbitraryMachine", () => {
           ...machine,
           predictableActionArguments: true,
         }) as unknown as AnyStateNode;
+        // a bit weird but we're using `definition` and `transitions` for their side effects.
+        // they either throw or log when issues are found with the machine configuration (not all possible issues).
+        m.definition;
         walkStateNodes(m, (node) => node.transitions);
         expect(warn).not.toHaveBeenCalled();
         expect(error).not.toHaveBeenCalled();
