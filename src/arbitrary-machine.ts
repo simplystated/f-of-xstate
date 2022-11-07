@@ -70,6 +70,12 @@ interface StateConfig {
   always?: Array<EventConfig>;
   onDone?: Array<EventConfig>;
   data?: Function;
+  invoke?: Array<InvokeConfig>;
+}
+
+interface InvokeConfig {
+  id?: string;
+  src: string;
 }
 
 interface EventConfig {
@@ -159,9 +165,26 @@ const doneDataStateUpdate = () =>
       data,
     }));
 
+const invokeStateUpdate = () =>
+  fc
+    .option(
+      fc.record({
+        src: fc.string(),
+        id: fc.string(),
+      })
+    )
+    .map((invoke) => (state: StateConfig) => ({
+      ...state,
+      invoke: (state.invoke ?? []).concat(invoke ? [invoke] : []),
+    }));
+
 const standardStateUpdate = (stateIds: Array<string>) =>
   fc.array(
-    fc.oneof(eventMapStateUpdate(stateIds), alwaysStateUpdate(stateIds)),
+    fc.oneof(
+      eventMapStateUpdate(stateIds),
+      alwaysStateUpdate(stateIds),
+      invokeStateUpdate()
+    ),
     { maxLength: 3, depthIdentifier }
   );
 
@@ -176,6 +199,7 @@ const parallelStateUpdate = (stateIds: Array<string>) =>
     fc.oneof(
       eventMapStateUpdate(stateIds),
       alwaysStateUpdate(stateIds),
+      invokeStateUpdate(),
       onDoneStateUpdate(stateIds)
     ),
     { maxLength: 3, depthIdentifier }
@@ -184,7 +208,14 @@ const parallelStateUpdate = (stateIds: Array<string>) =>
 const historyStateUpdate = (stateIds: Array<string>) => fc.constant([]);
 
 const finalStateUpdate = (stateIds: Array<string>) =>
-  fc.array(fc.oneof(doneDataStateUpdate()), { maxLength: 1, depthIdentifier });
+  fc
+    .tuple(
+      fc.option(doneDataStateUpdate()),
+      fc.array(invokeStateUpdate(), { maxLength: 3, depthIdentifier })
+    )
+    .map(([done, invokes]) =>
+      invokes.concat(!!done ? ([done] as any) : [])
+    ) as fc.Arbitrary<Array<Update>>;
 
 const stateUpdateForType = (stateIds: Array<string>, type: StateType) =>
   ({
