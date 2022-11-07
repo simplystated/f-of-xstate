@@ -61,6 +61,25 @@ interface BaseStateConfig {
   states: Record<string, BaseStateConfig>;
 }
 
+// this is a weird hybrid of StateNodeDefinition and StateNodeConfig
+interface StateConfig {
+  type?: StateType;
+  id?: string;
+  states?: Record<string, StateConfig>;
+  on?: Record<string, Array<EventConfig>>;
+  always?: Array<EventConfig>;
+  onDone?: Array<EventConfig>;
+  data?: Function;
+}
+
+interface EventConfig {
+  eventType?: string;
+  target?: string;
+  actions: Array<string>;
+  cond?: string;
+  delay?: string;
+}
+
 const createStates = (
   path: Array<string>,
   pathsByStateNames: Map<string, { path: Array<string>; type: StateType }>,
@@ -98,12 +117,12 @@ const eventArb = (stateIds: Array<string>) =>
             : fc.constant(`#${target}`),
         actions: fc.array(fc.string(), { maxLength: 3, depthIdentifier }),
         cond: fc.oneof(fc.constant(void 0), fc.string()),
-        delay: fc.string(),
+        delay: fc.oneof(fc.constant(void 0), fc.string()),
       })
     );
 
 const eventMapStateUpdate = (stateIds: Array<string>) =>
-  eventArb(stateIds).map((event) => (state: any) => ({
+  eventArb(stateIds).map((event) => (state: StateConfig) => ({
     ...state,
     on: {
       ...state?.on,
@@ -115,7 +134,7 @@ const eventMapStateUpdate = (stateIds: Array<string>) =>
   }));
 
 const alwaysStateUpdate = (stateIds: Array<string>) =>
-  eventArb(stateIds).map((event) => (state: any) => {
+  eventArb(stateIds).map((event) => (state: StateConfig) => {
     const { eventType, ...evt } = event;
     return {
       ...state,
@@ -124,7 +143,7 @@ const alwaysStateUpdate = (stateIds: Array<string>) =>
   });
 
 const onDoneStateUpdate = (stateIds: Array<string>) =>
-  eventArb(stateIds).map((event) => (state: any) => {
+  eventArb(stateIds).map((event) => (state: StateConfig) => {
     const { eventType, ...evt } = event;
     return {
       ...state,
@@ -135,7 +154,7 @@ const onDoneStateUpdate = (stateIds: Array<string>) =>
 const doneDataStateUpdate = () =>
   fc
     .func(fc.dictionary(fc.string(), fc.jsonValue(), { maxKeys: 3 }))
-    .map((data) => (state: any) => ({
+    .map((data) => (state: StateConfig) => ({
       ...state,
       data,
     }));
@@ -176,11 +195,13 @@ const stateUpdateForType = (stateIds: Array<string>, type: StateType) =>
     final: finalStateUpdate,
   }[type](stateIds));
 
+type Update = (state: StateConfig) => StateConfig;
+
 const applyInPath = (
-  state: any,
+  state: StateConfig,
   path: Array<string>,
-  updates: Array<any>
-): Record<string, any> => {
+  updates: Array<Update>
+): StateConfig => {
   if (path.length > 0) {
     const nextState = path[0];
     return {
@@ -188,7 +209,7 @@ const applyInPath = (
       states: {
         ...state.states,
         [nextState]: applyInPath(
-          state.states[nextState] as any,
+          state.states![nextState],
           path.slice(1),
           updates
         ),
@@ -223,7 +244,7 @@ export const arbitraryMachine: fc.Arbitrary<AnyStateNodeConfig> = fc
       )
       .map((pathsAndUpdates) => {
         return pathsAndUpdates.reduce(
-          (rootState: any, [path, updates]) =>
+          (rootState: StateConfig, [path, updates]) =>
             applyInPath(rootState, path, updates),
           rootState
         );
