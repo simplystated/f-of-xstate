@@ -4,7 +4,8 @@ import { arbitraryMachine } from "../src/arbitrary-machine";
 
 type AnyStateNode = StateNode<any, any, any, any, any, any>;
 
-//console.log(JSON.stringify(fc.sample(arbitraryMachine, 3), null, 2));
+// console.log(JSON.stringify(fc.sample(arbitraryMachine, 3), null, 2));
+
 describe("arbitraryMachine", () => {
   afterEach(() => {
     jest.restoreAllMocks();
