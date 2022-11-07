@@ -125,7 +125,7 @@ describe("categorizeTransitions", () => {
           machine,
           states,
           isDelayedTransition,
-          ({ after: _, on: _, always: _, ...machine }) => {
+          ({ after: _after, on: _on, always: _always, ...machine }) => {
             return {
               ...machine,
             };
