@@ -11,12 +11,20 @@ const stateNameArbitrary = fc
 
 const machineDescriptorArbitrary: fc.Arbitrary<StateDescriptor> = fc.letrec(
   (tie) => ({
-    machine: fc.oneof(
-      { maxDepth: 3, withCrossShrink: true, depthIdentifier },
-      tie("atomicState"),
-      tie("compoundState"),
-      tie("parallelState")
-    ),
+    machine: fc
+      .oneof(
+        { maxDepth: 3, withCrossShrink: true, depthIdentifier },
+        tie("atomicState"),
+        tie("compoundState"),
+        tie("parallelState")
+      )
+      .map(
+        (([type, name, children]: StateDescriptor): StateDescriptor => [
+          "machine",
+          name,
+          children,
+        ]) as any
+      ),
     state: fc.oneof(
       { maxDepth: 3, withCrossShrink: true, depthIdentifier },
       tie("atomicState"),
@@ -53,7 +61,13 @@ const machineDescriptorArbitrary: fc.Arbitrary<StateDescriptor> = fc.letrec(
   })
 ).machine as fc.Arbitrary<any>;
 
-type StateType = "atomic" | "compound" | "parallel" | "history" | "final";
+type StateType =
+  | "machine"
+  | "atomic"
+  | "compound"
+  | "parallel"
+  | "history"
+  | "final";
 type StateDescriptor = [StateType, string, Array<StateDescriptor>];
 interface BaseStateConfig {
   type: StateType;
@@ -129,22 +143,32 @@ const eventArb = (stateIds: Array<string>) =>
 
 const eventMapStateUpdate = (stateIds: Array<string>) =>
   eventArb(stateIds).map((event) => (state: StateConfig) => ({
-    ...state,
-    on: {
-      ...state?.on,
-      [event.eventType]: (state?.on?.hasOwnProperty(event.eventType)
-        ? state.on[event.eventType]
-        : []
-      ).concat([event]),
+    state: {
+      ...state,
+      on: {
+        ...state?.on,
+        [event.eventType]: (state?.on?.hasOwnProperty(event.eventType)
+          ? state.on[event.eventType]
+          : []
+        ).concat([event]),
+      },
     },
+    events: [event.eventType],
+    conditions: event.cond ? [event.cond] : [],
+    actions: event.actions,
   }));
 
 const alwaysStateUpdate = (stateIds: Array<string>) =>
   eventArb(stateIds).map((event) => (state: StateConfig) => {
     const { eventType, ...evt } = event;
     return {
-      ...state,
-      always: (state?.always ?? []).concat([evt]),
+      state: {
+        ...state,
+        always: (state?.always ?? []).concat([evt]),
+      },
+      events: [""],
+      conditions: evt.cond ? [evt.cond] : [],
+      actions: evt.actions,
     };
   });
 
@@ -152,8 +176,13 @@ const onDoneStateUpdate = (stateIds: Array<string>) =>
   eventArb(stateIds).map((event) => (state: StateConfig) => {
     const { eventType, ...evt } = event;
     return {
-      ...state,
-      onDone: (state?.onDone ?? []).concat([evt]),
+      state: {
+        ...state,
+        onDone: (state?.onDone ?? []).concat([evt]),
+      },
+      events: [`done.state.${state.id}`],
+      conditions: evt.cond ? [evt.cond] : [],
+      actions: evt.actions,
     };
   });
 
@@ -161,8 +190,13 @@ const doneDataStateUpdate = () =>
   fc
     .func(fc.dictionary(fc.string(), fc.jsonValue(), { maxKeys: 3 }))
     .map((data) => (state: StateConfig) => ({
-      ...state,
-      data,
+      state: {
+        ...state,
+        data,
+      },
+      events: [],
+      conditions: [],
+      actions: [],
     }));
 
 const invokeStateUpdate = () =>
@@ -174,11 +208,27 @@ const invokeStateUpdate = () =>
       })
     )
     .map((invoke) => (state: StateConfig) => ({
-      ...state,
-      invoke: (state.invoke ?? []).concat(invoke ? [invoke] : []),
+      state: {
+        ...state,
+        invoke: (state.invoke ?? []).concat(invoke ? [invoke] : []),
+      },
+      events: [],
+      conditions: [],
+      actions: [],
     }));
 
 const standardStateUpdate = (stateIds: Array<string>) =>
+  fc.array(
+    fc.oneof(
+      eventMapStateUpdate(stateIds),
+      alwaysStateUpdate(stateIds),
+      invokeStateUpdate()
+    ),
+    { maxLength: 3, depthIdentifier }
+  );
+
+// this is necessary because we don't allow onDone at the top level of a machine, even if it's a parallel state.
+const machineStateUpdate = (stateIds: Array<string>) =>
   fc.array(
     fc.oneof(
       eventMapStateUpdate(stateIds),
@@ -224,34 +274,65 @@ const stateUpdateForType = (stateIds: Array<string>, type: StateType) =>
     parallel: parallelStateUpdate,
     history: historyStateUpdate,
     final: finalStateUpdate,
+    machine: machineStateUpdate,
   }[type](stateIds));
 
-type Update = (state: StateConfig) => StateConfig;
+type Update = (state: StateConfig) => UpdateState;
+interface UpdateState {
+  state: StateConfig;
+  events: Array<string>;
+  conditions: Array<string>;
+  actions: Array<string>;
+}
 
 const applyInPath = (
-  state: StateConfig,
+  updateState: UpdateState,
   path: Array<string>,
   updates: Array<Update>
-): StateConfig => {
+): UpdateState => {
   if (path.length > 0) {
     const nextState = path[0];
+    const {
+      state: nextStateValue,
+      events,
+      conditions,
+      actions,
+    } = applyInPath(
+      { ...updateState, state: updateState.state.states![nextState] },
+      path.slice(1),
+      updates
+    );
     return {
-      ...state,
-      states: {
-        ...state.states,
-        [nextState]: applyInPath(
-          state.states![nextState],
-          path.slice(1),
-          updates
-        ),
+      events,
+      conditions,
+      actions,
+      state: {
+        ...updateState.state,
+        states: {
+          ...updateState.state.states,
+          [nextState]: nextStateValue,
+        },
       },
     };
   }
 
-  return updates.reduce((state, update) => update(state), state);
+  return updates.reduce((updateState, update) => {
+    const next = update(updateState.state);
+    return {
+      state: next.state,
+      events: updateState.events.concat(next.events),
+      conditions: updateState.conditions.concat(next.conditions),
+      actions: updateState.actions.concat(next.actions),
+    };
+  }, updateState);
 };
 
-export const arbitraryMachine: fc.Arbitrary<AnyStateNodeConfig> = fc
+export const arbitraryMachine: fc.Arbitrary<{
+  machine: AnyStateNodeConfig;
+  events: Array<string>;
+  conditions: Array<string>;
+  actions: Array<string>;
+}> = fc
   .array(machineDescriptorArbitrary, { minLength: 1 })
   .chain((stateDescriptors) => {
     const pathsByStateNames = new Map<
@@ -275,10 +356,17 @@ export const arbitraryMachine: fc.Arbitrary<AnyStateNodeConfig> = fc
       )
       .map((pathsAndUpdates) => {
         return pathsAndUpdates.reduce(
-          (rootState: StateConfig, [path, updates]) =>
-            applyInPath(rootState, path, updates),
-          rootState
+          (updateState: UpdateState, [path, updates]) =>
+            applyInPath(updateState, path, updates),
+          { state: rootState, events: [], conditions: [], actions: [] }
         );
       })
-      .map(({ onDone, ...machine }) => machine);
+      .map(({ events, conditions, actions, state: machine }) => ({
+        machine,
+        events: dedup(events),
+        conditions: dedup(conditions),
+        actions: dedup(actions),
+      }));
   }) as fc.Arbitrary<any>;
+
+const dedup = <T>(items: Array<T>): Array<T> => Array.from(new Set(items));
