@@ -1,4 +1,5 @@
 import {
+  DelayedTransitionDefinition,
   EventObject,
   StateMachine,
   StateNode,
@@ -23,8 +24,10 @@ export const getAllTransitions = <
   TStateNode extends StateNode<TContext, TStateSchema, TEvent, any, any, any>
 >(
   root: TStateMachine | TStateNode
-): Array<TransitionDefinition<TContext, TEvent>> =>
-  getAllTransitionsFromDefinition(root.definition);
+): Array<
+  | TransitionDefinition<TContext, TEvent>
+  | DelayedTransitionDefinition<TContext, TEvent>
+> => getAllTransitionsFromDefinition(root.definition);
 
 export const getAllTransitionsFromDefinition = <
   TContext,
@@ -32,7 +35,10 @@ export const getAllTransitionsFromDefinition = <
   TEvent extends EventObject
 >(
   definition: StateNodeDefinition<TContext, TStateSchema, TEvent>
-): Array<TransitionDefinition<TContext, TEvent>> =>
+): Array<
+  | TransitionDefinition<TContext, TEvent>
+  | DelayedTransitionDefinition<TContext, TEvent>
+> =>
   getAllStatesFromDefinition(definition).flatMap(
     (stateDefinition) => stateDefinition.transitions
   );
