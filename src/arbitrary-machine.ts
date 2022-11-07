@@ -128,7 +128,7 @@ const createStates = (
 
 // there are some event names that xstate just doesn't like...
 const isValidXStateEvent = (eventType: string) =>
-  ["constructor", "valueOf", "toString"].indexOf(eventType) < 0;
+  ["__proto__", "constructor", "valueOf", "toString"].indexOf(eventType) < 0;
 
 const eventArb = (stateIds: Array<string>) =>
   fc
