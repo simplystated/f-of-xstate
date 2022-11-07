@@ -13,7 +13,7 @@ describe("getAllStates", () => {
           ...machine,
           predictableActionArguments: true,
         });
-        expect(new Set(getAllStates(m).map((s) => s.key))).toEqual(
+        expect(new Set(getAllStates(m).map((s) => s.id))).toEqual(
           new Set(states.concat([uniqueMachineId]))
         );
         return true;
@@ -31,7 +31,7 @@ describe("getAllProperStates", () => {
           ...machine,
           predictableActionArguments: true,
         });
-        expect(new Set(getAllProperStates(m).map((s) => s.key))).toEqual(
+        expect(new Set(getAllProperStates(m).map((s) => s.id))).toEqual(
           new Set(states)
         );
         return true;
