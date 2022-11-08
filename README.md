@@ -1,8 +1,22 @@
 # @simplystated/f-of-xstate
 
-Tools for operating on [xstate](https://github.com/statelyai/xstate) state machines as data.
+Tools for operating on [XState](https://github.com/statelyai/xstate) state machines as data.
 
 Query and update your statechart structure.
+
+# Pronounciation
+
+Eff of ex state.
+As in: `f(x-state)`, because it's a set of utilities to operate on XState state charts as data.
+
+# Motivation
+
+Statecharts are awesome.
+A lot of that reputation comes from the fact that they make it far easier to reason about your logic, making hard problems tractable.
+However, one of the too-often overlooked benefits of representing your logic as data is that once you do that... well... your logic is data!
+Once your logic is data, you can live out every lisp programmer's dream and write programs to inspect, modify, and even generate your programs.
+That's where f-of-xstate comes in.
+We aim to provide a set of utilities to make that easy.
 
 # API Documentation
 
@@ -10,7 +24,7 @@ Please find our API Documentation [here](https://simplystated.github.io/f-of-xst
 
 # Testing
 
-f-of-xstate ships with a [fast-check](https://github.com/dubzzz/fast-check) [Arbitrary](https://github.com/dubzzz/fast-check/blob/main/packages/fast-check/documentation/Arbitraries.md) to generate random xstate state machine configurations (e.g. the things you can pass to `createMachine`).
+f-of-xstate ships with a [fast-check](https://github.com/dubzzz/fast-check) [Arbitrary](https://github.com/dubzzz/fast-check/blob/main/packages/fast-check/documentation/Arbitraries.md) to generate random XState state machine configurations (e.g. the things you can pass to `createMachine`).
 
 The intention is that this should make it easier to use property-based testing to gain confidence in the correctness of your state machine transformations.
 All of the functions exposed in this package make use of this arbitrary for testing.
@@ -26,7 +40,7 @@ import { arbitraryMachine } from "@simplystated/f-of-xstate/dist/arbitrary-machi
 
 # Querying
 
-Given a `StateMachine` (e.g. something returned from xstate's `createMachine`), you can query for the following, each of which walks the tree of state nodes and returns an array of all items encountered:
+Given a `StateMachine` (e.g. something returned from XState's `createMachine`), you can query for the following, each of which walks the tree of state nodes and returns an array of all items encountered:
  - [`getAllStates`](https://simplystated.github.io/f-of-xstate/functions/index.getAllStates.html)
  - [`getAllProperStates`](https://simplystated.github.io/f-of-xstate/functions/index.getAllProperStates.html)
  - [`getAllActions`](https://simplystated.github.io/f-of-xstate/functions/index.getAllActions.html)
