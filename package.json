@@ -12,6 +12,12 @@
     "lint": "eslint src && eslint tests",
     "doc": "typedoc"
   },
+  "files": [
+    "README",
+    "LICENSE",
+    "dist",
+    "package.json"
+  ],
   "repository": {
     "type": "git",
     "url": "git+https://github.com/simplystated/f-of-xstate.git"
