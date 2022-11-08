@@ -1,5 +1,5 @@
 import * as fc from "fast-check";
-import { createMachine, TransitionDefinition } from "xstate";
+import { createMachine, StateNodeConfig, TransitionDefinition } from "xstate";
 import { arbitraryMachine } from "../src/arbitrary-machine";
 import {
   categorizeTransitions,
@@ -13,7 +13,6 @@ import {
   TransitionsByCategory,
 } from "../src/categorize-transitions";
 import { getAllTransitions } from "../src/get-all-transitions";
-import { AnyStateNodeConfig } from "../xstate-utils";
 
 describe("categorizeTransitions", () => {
   it("should return all transitions", () => {
@@ -47,7 +46,6 @@ describe("categorizeTransitions", () => {
         return testMutationProperty(
           machine,
           states,
-          isAlwaysTransition,
           ({ always, ...machine }) => ({
             ...machine,
             always: ((always as Array<any>) ?? []).slice(0, -1),
@@ -70,7 +68,6 @@ describe("categorizeTransitions", () => {
         return testMutationProperty(
           machine,
           states,
-          isWildcardTransition,
           ({ on: _, ...machine }) => {
             return {
               ...machine,
@@ -97,7 +94,6 @@ describe("categorizeTransitions", () => {
         return testMutationProperty(
           machine,
           states,
-          isEventTransition,
           ({ on: _, ...machine }) => {
             return {
               ...machine,
@@ -124,7 +120,6 @@ describe("categorizeTransitions", () => {
         return testMutationProperty(
           machine,
           states,
-          isDelayedTransition,
           ({ after: _after, on: _on, always: _always, ...machine }) => {
             return {
               ...machine,
@@ -151,7 +146,6 @@ describe("categorizeTransitions", () => {
         return testMutationProperty(
           machine,
           states,
-          isInvocationDoneTransition,
           ({ invoke: _, ...machine }) => {
             return {
               ...machine,
@@ -177,7 +171,6 @@ describe("categorizeTransitions", () => {
         return testMutationProperty(
           machine,
           states,
-          isInvocationErrorTransition,
           ({ invoke: _, ...machine }) => {
             return {
               ...machine,
@@ -203,7 +196,6 @@ describe("categorizeTransitions", () => {
         return testMutationProperty(
           machine,
           states,
-          isStateDoneTransition,
           ({ states: _, ...machine }) => {
             // TODO: this is a bit cheap
             return {
@@ -227,10 +219,11 @@ describe("categorizeTransitions", () => {
   });
 });
 
+type AnyStateNodeConfig = StateNodeConfig<any, any, any>;
+
 const testMutationProperty = (
   machine: AnyStateNodeConfig,
   states: Array<string>,
-  transitionFilter: (t: TransitionDefinition<any, any>) => boolean,
   removeSomeTransitions: (machine: AnyStateNodeConfig) => AnyStateNodeConfig,
   appendNewTransition: (
     machine: AnyStateNodeConfig,
