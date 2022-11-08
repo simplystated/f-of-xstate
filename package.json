@@ -1,5 +1,5 @@
 {
-  "name": "@simplystated/xstate-meta",
+  "name": "@simplystated/f-of-xstate",
   "version": "0.1.0",
   "description": "Tools for operating on xstate state machines as data, by Simply Stated",
   "main": "dist/index.js",
@@ -14,14 +14,14 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/simplystated/xstate-meta.git"
+    "url": "git+https://github.com/simplystated/f-of-xstate.git"
   },
   "author": "Adam Berger <adam@simplystated.dev>",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/simplystated/xstate-meta/issues"
+    "url": "https://github.com/simplystated/f-of-xstate/issues"
   },
-  "homepage": "https://github.com/simplystated/xstate-meta#readme",
+  "homepage": "https://github.com/simplystated/f-of-xstate#readme",
   "devDependencies": {
     "@types/jest": "^29.1.1",
     "@typescript-eslint/eslint-plugin": "^5.38.1",
