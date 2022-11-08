@@ -3,13 +3,6 @@ import { createMachine, StateNodeConfig, TransitionDefinition } from "xstate";
 import { arbitraryMachine } from "../src/arbitrary-machine";
 import {
   categorizeTransitions,
-  isAlwaysTransition,
-  isDelayedTransition,
-  isEventTransition,
-  isInvocationDoneTransition,
-  isInvocationErrorTransition,
-  isStateDoneTransition,
-  isWildcardTransition,
   TransitionsByCategory,
 } from "../src/categorize-transitions";
 import { getAllTransitions } from "../src/get-all-transitions";
@@ -46,7 +39,7 @@ describe("categorizeTransitions", () => {
         return testMutationProperty(
           machine,
           states,
-          ({ always, ...machine }) => ({
+          ({ always, on: _, ...machine }) => ({
             ...machine,
             always: ((always as Array<any>) ?? []).slice(0, -1),
           }),
