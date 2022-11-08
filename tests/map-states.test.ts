@@ -1,5 +1,5 @@
 import * as fc from "fast-check";
-import { createMachine } from "xstate";
+import { createMachine, StateNodeConfig } from "xstate";
 import { arbitraryMachine } from "../src/arbitrary-machine";
 import { getAllActions } from "../src/get-all-actions";
 import { getAllConditions } from "../src/get-all-conditions";
@@ -59,6 +59,45 @@ describe("mapStates", () => {
         }
       ),
       { numRuns: 1000 }
+    );
+  });
+
+  it("should provide correct paths", () => {
+    fc.assert(
+      fc.property(arbitraryMachine, ({ machine, states }) => {
+        const uniqueMachineId = `machine-${states.join("-")}`;
+        const m = createMachine({
+          ...machine,
+          id: uniqueMachineId,
+          predictableActionArguments: true,
+        });
+        const parentByChild = new Map<string, string | null>();
+        const _ = mapStates(m, (node, path) => {
+          parentByChild.set(
+            node.id,
+            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+            path.length > 0 ? path[path.length - 1].id! : null
+          );
+          return node;
+        });
+
+        expect(parentByChild.size).toEqual(states.length + 1); // +1 b/c of the root machine state
+
+        const allStates = getAllStates(m);
+
+        for (const state of allStates) {
+          const parentId = state.id;
+
+          for (const child of Object.values(state.states)) {
+            const nodeChild = child as StateNodeConfig<any, any, any>;
+            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+            expect(parentByChild.get(nodeChild.id!)).toEqual(parentId);
+          }
+        }
+
+        return true;
+      }),
+      { numRuns: 500 }
     );
   });
 });

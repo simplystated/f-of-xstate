@@ -62,7 +62,10 @@ export const mapStates = <
     | StateMachine<any, any, any, any, any, any, any>
 >(
   root: T,
-  mapper: (node: MappableNodeDefinition<T["definition"]>) => T["config"]
+  mapper: (
+    node: MappableNodeDefinition<T["definition"]>,
+    statePath: StatePath<T["config"]>
+  ) => T["config"]
 ): T["config"] => {
   const machineDefinition = mapStatesFromDefinition(root.definition, mapper);
   return machineDefinition;
@@ -102,7 +105,25 @@ export const mapStates = <
  *
  * @param root StateNodeDefinition to map over.
  * @param mapper Function that returns a new `StateNodeConfig`
- * given an existing `StateNodeDefinition`.
+ * given an existing `StateNodeDefinition` and a state path.
+ *
+ * `node` provides a full `StateNodeDefinition` but renames the
+ * `transitions` property to `readonlyTransitions`. This is to
+ * ensure that mapper implementers do not expect that returning a
+ * state with a `transitions` property will have any effect.
+ * *IMPORTANT*: All transitions for the mapped states are taken from the
+ * `on` property returned by `mapper`. `readonlyTransitions` is ignored!
+ *
+ * `statePath`:
+ *           1
+ *        2      3
+ *     4             6
+ *
+ * Imagining the numbers above as state IDs,
+ * when processing node "4" in the tree above, paths will be ["1", "2"]
+ *
+ * Generally, `mapper` should return a modified copy of the provided state.
+ * E.g. with `(state) => ({ ...state, modifications: "here" })`
  * @returns The new `StateNodeConfig` resulting from applying `mapper`
  * to each state.
  */
@@ -110,10 +131,29 @@ export const mapStatesFromDefinition = <
   T extends StateNodeDefinition<any, any, any>,
   R extends StateNodeConfig<any, any, any, any>
 >(
+  definition: T,
+  mapper: (node: MappableNodeDefinition<T>, statePath: StatePath<R>) => R
+): R => mapStatesWithPathFromDefinition(definition, [], mapper);
+
+/**
+ * The path of states from the root to the current node.
+ */
+export type StatePath<R extends StateNodeConfig<any, any, any, any>> = Array<
+  Omit<R, "states">
+>;
+
+const mapStatesWithPathFromDefinition = <
+  T extends StateNodeDefinition<any, any, any>,
+  R extends StateNodeConfig<any, any, any, any>
+>(
   { transitions, ...definition }: T,
-  mapper: (node: MappableNodeDefinition<T>) => R
+  path: Array<Omit<R, "states">>,
+  mapper: (node: MappableNodeDefinition<T>, statePath: StatePath<R>) => R
 ): R => {
-  const mapped = mapper({ ...definition, readonlyTransitions: transitions });
+  const mapped = mapper(
+    { ...definition, readonlyTransitions: transitions },
+    path
+  );
   const mappedOn = mapped.on as undefined | Record<string, any>;
   const alwaysTransitions = mappedOn?.[""];
   if (alwaysTransitions) {
@@ -125,17 +165,27 @@ export const mapStatesFromDefinition = <
     ? alwaysTransitions
     : [alwaysTransitions];
 
-  return {
+  const newStateWithoutChildren = {
     ...mapped,
     always: ((mapped.always as Array<any>) ?? []).concat(
       alwaysTransitionsArray
     ),
-    states: Object.keys(definition.states).reduce(
-      (states, key) => ({
-        ...states,
-        [key]: mapStatesFromDefinition(definition.states[key] as T, mapper),
-      }),
-      {}
-    ),
   };
+
+  const newPath = path.concat(newStateWithoutChildren);
+
+  const newState = newStateWithoutChildren;
+  newState.states = Object.keys(definition.states).reduce(
+    (states, key) => ({
+      ...states,
+      [key]: mapStatesWithPathFromDefinition(
+        definition.states[key] as T,
+        newPath,
+        mapper
+      ),
+    }),
+    {}
+  );
+
+  return newState;
 };
