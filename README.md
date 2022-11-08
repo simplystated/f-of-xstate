@@ -1,4 +1,4 @@
-# @simplystated/f-of-xstate
+# @simplystated/f-of-xstate &middot; [![GitHub license](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/simplystated/f-of-xstate/blob/main/LICENSE) [![npm version](https://img.shields.io/npm/v/@simplystated/f-of-xstate.svg?style=flat)](https://www.npmjs.com/package/@simplystated/f-of-xstate) [![CI](https://github.com/simplystated/f-of-xstate/actions/workflows/ci.yaml/badge.svg)](https://github.com/simplystated/f-of-xstate/actions/workflows/ci.yaml)
 
 Tools for operating on [XState](https://github.com/statelyai/xstate) state machines as data.
 
@@ -19,6 +19,18 @@ However, one of the too-often overlooked benefits of representing your logic as 
 Once your logic is data, you can live out every lisp programmer's dream and write programs to inspect, modify, and even generate your programs.
 That's where f-of-xstate comes in.
 We aim to provide a set of utilities to make that easy.
+
+# Installation
+
+```bash
+yarn add @simplystated/f-of-xstate
+```
+
+or
+
+```bash
+npm install --save @simplystated/f-of-xstate
+```
 
 # API Documentation
 
@@ -80,6 +92,8 @@ const updatedMachine = createMachine(config);
 
 f-of-xstate is a utility library built by [Simply Stated](https://www.simplystated.dev).
 At Simply Stated, our goal is to help to unlock the power of statecharts for everyone.
+
+![Logo](./simply-stated.png)
 
 # License
 
