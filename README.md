@@ -4,7 +4,7 @@ Tools for operating on [XState](https://github.com/statelyai/xstate) state machi
 
 Query and update your statechart structure.
 
-![Logo](./f-of-xstate.png)
+![Logo](https://github.com/simplystated/f-of-xstate/raw/main/f-of-xstate.png)
 
 # Pronounciation
 
@@ -93,7 +93,7 @@ const updatedMachine = createMachine(config);
 f-of-xstate is a utility library built by [Simply Stated](https://www.simplystated.dev).
 At Simply Stated, our goal is to help to unlock the power of statecharts for everyone.
 
-![Logo](./simply-stated.png)
+![Logo](https://github.com/simplystated/f-of-xstate/raw/main/simply-stated.png)
 
 # License
 
