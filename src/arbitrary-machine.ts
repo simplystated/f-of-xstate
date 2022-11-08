@@ -3,7 +3,10 @@ import type { StateNodeConfig } from "xstate";
 
 const depthIdentifier = fc.createDepthIdentifier();
 
-type AnyStateNodeConfig = StateNodeConfig<any, any, any, any>;
+/**
+ * Any StateNodeConfig.
+ */
+export type AnyStateNodeConfig = StateNodeConfig<any, any, any, any>;
 
 const isValidXStateStateName = (stateName: string) =>
   stateName !== "__proto__" &&
@@ -347,6 +350,19 @@ const applyInPath = (
   }, updateState);
 };
 
+/**
+ * [Fast-check](https://github.com/dubzzz/fast-check) Arbitrary
+ * to generate a config for an XState state machine.
+ * The `machine` property of `arbitraryMachine` output is intended to be
+ * passed to `createMachine`.
+ *
+ * The arbitrary returns the machine config in the `machine` property,
+ * the list of all events in the machine in the `events` property,
+ * the list of all conditions in the machine in the `conditions` property,
+ * the list of all actions in the machine in the `actions` property,
+ * the list of all services in the machine in the `services` property,
+ * and the list of all states in the machine in the `states` property.
+ */
 export const arbitraryMachine: fc.Arbitrary<{
   machine: AnyStateNodeConfig;
   events: Array<string>;

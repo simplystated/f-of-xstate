@@ -8,6 +8,12 @@ import {
 } from "xstate";
 import { getAllTransitionsFromDefinition } from "./get-all-transitions";
 
+/**
+ * Returns all conditions across all transitions for the provided root and all descendants.
+ *
+ * @param root Machine or StateNode to get all conditions for.
+ * @returns All conditions for the provided Machine or StateNode and all descendants.
+ */
 export const getAllConditions = <
   TContext,
   TStateSchema extends StateSchema<any>,
@@ -26,6 +32,12 @@ export const getAllConditions = <
 ): Array<Guard<TContext, TEvent>> =>
   getAllConditionsFromDefinition(root.definition);
 
+/**
+ * Returns all conditions across all transitions for the provided root and all descendants.
+ *
+ * @param root StateNodeDefinition to get all conditions for.
+ * @returns All conditions for the provided StateNodeDefinition and all descendants.
+ */
 export const getAllConditionsFromDefinition = <
   TContext,
   TStateSchema extends StateSchema<any>,

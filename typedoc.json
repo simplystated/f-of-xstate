@@ -1,0 +1,11 @@
+{
+  "entryPoints": ["./src/index.ts", "./src/arbitrary-machine.ts"],
+  "out": "doc",
+  "sidebarLinks": {
+    "Simply Stated": "https://www.simplystated.dev",
+    "Github": "https://github.com/simplystated/f-of-xstate"
+  },
+  "navigationLinks": {
+    "Simply Stated": "https://www.simplystated.dev",
+  }
+}

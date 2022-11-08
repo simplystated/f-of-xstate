@@ -6,6 +6,18 @@ import {
   StateSchema,
 } from "xstate";
 
+/**
+ * Returns all states including root and all descendants.
+ *
+ * Note: this includes the "state" representing the machine itself if
+ * passed a machine.
+ *
+ * To retrieve only "proper" states (excluding the root/machine itself),
+ * use {@link getAllProperStates}.
+ *
+ * @param root The StateMachine or StateNode for which to get all states.
+ * @returns A list of all states.
+ */
 export const getAllStates = <
   TContext,
   TStateSchema extends StateSchema<any>,
@@ -24,6 +36,16 @@ export const getAllStates = <
 ): Array<StateNodeDefinition<TContext, TStateSchema, TEvent>> =>
   getAllStatesFromDefinition(root.definition);
 
+/**
+ * Returns all proper states (excluding root).
+ * Includes all descendants of root.
+ *
+ * To retrieve all states (including the root/machine itself),
+ * use {@link getAllStates}.
+ *
+ * @param root The StateMachine or StateNode for which to get all proper states.
+ * @returns A list of all proper states.
+ */
 export const getAllProperStates = <
   TContext,
   TStateSchema extends StateSchema<any>,
@@ -44,6 +66,15 @@ export const getAllProperStates = <
     getAllStatesFromDefinition as any
   );
 
+/**
+ * Returns all states including root and all descendants.
+ *
+ * Note: this includes the "state" representing the machine itself if
+ * passed a machine.
+ *
+ * @param root The StateNodeDefinition for which to get all states.
+ * @returns A list of all states.
+ */
 export const getAllStatesFromDefinition = <
   TContext,
   TStateSchema extends StateSchema<any>,

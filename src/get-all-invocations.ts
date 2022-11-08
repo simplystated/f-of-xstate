@@ -8,6 +8,12 @@ import {
 } from "xstate";
 import { getAllStatesFromDefinition } from "./get-all-states";
 
+/**
+ * Returns all invocations across all states for the provided root and all descendants.
+ *
+ * @param root Machine or StateNode to get all invocations for.
+ * @returns All invocations for the provided Machine or StateNode and all descendants.
+ */
 export const getAllInvocations = <
   TContext,
   TStateSchema extends StateSchema<any>,
@@ -26,6 +32,12 @@ export const getAllInvocations = <
 ): Array<InvokeDefinition<TContext, TEvent>> =>
   getAllInvocationsFromDefinition(root.definition);
 
+/**
+ * Returns all invocations across all states for the provided root and all descendants.
+ *
+ * @param root StateNodeDefinition to get all invocations for.
+ * @returns All invocations for the provided StateNodeDefinition and all descendants.
+ */
 export const getAllInvocationsFromDefinition = <
   TContext,
   TStateSchema extends StateSchema<any>,
