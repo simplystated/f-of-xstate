@@ -4,6 +4,8 @@ Tools for operating on [XState](https://github.com/statelyai/xstate) state machi
 
 Query and update your statechart structure.
 
+![Logo](./f-of-xstate.png)
+
 # Pronounciation
 
 Eff of ex state.
