@@ -9,7 +9,8 @@
     "build": "tsc",
     "watch": "tsc -w",
     "prettier": "prettier --write '{src,tests}/**/*.{ts,js,yaml,yml,json}'",
-    "lint": "eslint src && eslint tests"
+    "lint": "eslint src && eslint tests",
+    "doc": "typedoc --out doc src"
   },
   "repository": {
     "type": "git",
@@ -31,6 +32,7 @@
     "prettier": "^2.7.1",
     "ts-jest": "^29.0.3",
     "ts-node": "^10.9.1",
+    "typedoc": "^0.23.20",
     "typescript": "^4.8.4",
     "xstate": "^4.34.0"
   },
