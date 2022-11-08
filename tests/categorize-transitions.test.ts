@@ -39,10 +39,7 @@ describe("categorizeTransitions", () => {
         return testMutationProperty(
           machine,
           states,
-          ({ always, on: _, ...machine }) => ({
-            ...machine,
-            always: ((always as Array<any>) ?? []).slice(0, -1),
-          }),
+          ({ always: _always, on: _on, ...machine }) => machine,
           ({ always, ...machine }, target) => ({
             ...machine,
             always: ((always as Array<any>) ?? []).concat([
