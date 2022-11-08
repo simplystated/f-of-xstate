@@ -7,14 +7,13 @@ describe("getAllStates", () => {
   it("should return all state ids", () => {
     fc.assert(
       fc.property(arbitraryMachine, ({ machine, states }) => {
-        const uniqueMachineId = `machine-${states.join("-")}`;
         const m = createMachine({
-          id: uniqueMachineId,
           ...machine,
           predictableActionArguments: true,
         });
         expect(new Set(getAllStates(m).map((s) => s.id))).toEqual(
-          new Set(states.concat([uniqueMachineId]))
+          // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+          new Set(states.concat([machine.id!]))
         );
         return true;
       }),

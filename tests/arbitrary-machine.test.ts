@@ -4,7 +4,7 @@ import { arbitraryMachine } from "../src/arbitrary-machine";
 
 type AnyStateNode = StateNode<any, any, any, any, any, any>;
 
-// console.log(JSON.stringify(fc.sample(arbitraryMachine, 3), null, 2));
+// console.log(JSON.stringify(fc.sample(arbitraryMachine, 5), null, 2));
 
 describe("arbitraryMachine", () => {
   afterEach(() => {
@@ -26,9 +26,12 @@ describe("arbitraryMachine", () => {
         m.definition;
         walkStateNodes(m, (node) => node.transitions);
 
-        expect(warn).not.toHaveBeenCalled();
-        expect(error).not.toHaveBeenCalled();
-        jest.clearAllMocks();
+        try {
+          expect(warn).not.toHaveBeenCalled();
+          expect(error).not.toHaveBeenCalled();
+        } finally {
+          jest.clearAllMocks();
+        }
 
         return true;
       }),

@@ -21,10 +21,8 @@ describe("mapStates", () => {
       fc.property(
         arbitraryMachine,
         ({ machine, states, events, actions, conditions }) => {
-          const uniqueMachineId = `machine-${states.join("-")}`;
           const m = createMachine({
             ...machine,
-            id: uniqueMachineId,
             predictableActionArguments: true,
           });
           const mapped = mapStates(m, (node) => ({
@@ -38,7 +36,8 @@ describe("mapStates", () => {
 
           expect(getAllInvocations(mappedMachine)).toHaveLength(0);
           expect(new Set(getAllStates(mappedMachine).map((s) => s.id))).toEqual(
-            new Set(states.concat([uniqueMachineId]))
+            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+            new Set(states.concat([machine.id!]))
           );
           expect(
             new Set(getAllActions(mappedMachine).map((a) => a.type))
@@ -51,9 +50,12 @@ describe("mapStates", () => {
           ).toEqual(new Set(conditions));
 
           // we don't want to create machine configs that has warnings from a machine config that didn't have warnings.
-          expect(warn).not.toHaveBeenCalled();
-          expect(error).not.toHaveBeenCalled();
-          jest.clearAllMocks();
+          try {
+            expect(warn).not.toHaveBeenCalled();
+            expect(error).not.toHaveBeenCalled();
+          } finally {
+            jest.clearAllMocks();
+          }
 
           return true;
         }
@@ -65,10 +67,8 @@ describe("mapStates", () => {
   it("should provide correct paths", () => {
     fc.assert(
       fc.property(arbitraryMachine, ({ machine, states }) => {
-        const uniqueMachineId = `machine-${states.join("-")}`;
         const m = createMachine({
           ...machine,
-          id: uniqueMachineId,
           predictableActionArguments: true,
         });
         const parentByChild = new Map<string, string | null>();

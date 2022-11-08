@@ -93,6 +93,7 @@ interface StateConfig {
   onDone?: Array<EventConfig>;
   data?: Function; // eslint-disable-line @typescript-eslint/ban-types
   invoke?: Array<InvokeConfig>;
+  initial?: string;
 }
 
 interface InvokeConfig {
@@ -117,11 +118,12 @@ const createStates = (
     const id = pathsByStateNames.has(name)
       ? `${name}${pathsByStateNames.size}`
       : name;
-    pathsByStateNames.set(id, { path, type });
+    const newPath = path.concat([id]);
+    pathsByStateNames.set(id, { path: newPath, type });
     const state = {
       type,
       id,
-      states: createStates(path.concat(id), pathsByStateNames, children),
+      states: createStates(newPath, pathsByStateNames, children),
     };
     return {
       ...states,
@@ -138,7 +140,7 @@ const eventArb = (stateIds: Array<string>) =>
     .oneof(
       { depthIdentifier },
       fc.constant(void 0),
-      fc.constantFrom(...stateIds)
+      stateIds.length ? fc.constantFrom(...stateIds) : fc.constant(void 0)
     )
     .chain((target) =>
       fc.record({
@@ -171,6 +173,23 @@ const eventMapStateUpdate = (stateIds: Array<string>) =>
     actions: event.actions,
     services: [],
   }));
+
+const initialStateStateUpdate = () =>
+  fc.integer({ min: 0 }).map((idx) => (state: StateConfig) => ({
+    state: {
+      ...state,
+      initial: elementOf(idx, Object.keys(state.states ?? {})),
+    },
+    events: [],
+    conditions: [],
+    actions: [],
+    services: [],
+  }));
+
+const elementOf = <T>(rand: number, items: Array<T>): T => {
+  const idx = ((rand % items.length) + items.length) % items.length;
+  return items[idx];
+};
 
 const alwaysStateUpdate = (stateIds: Array<string>) =>
   eventArb(stateIds).map((event) => (state: StateConfig) => {
@@ -247,20 +266,36 @@ const standardStateUpdate = (stateIds: Array<string>) =>
 
 // this is necessary because we don't allow onDone at the top level of a machine, even if it's a parallel state.
 const machineStateUpdate = (stateIds: Array<string>) =>
-  fc.array(
-    fc.oneof(
-      eventMapStateUpdate(stateIds),
-      alwaysStateUpdate(stateIds),
-      invokeStateUpdate()
-    ),
-    { maxLength: 3, depthIdentifier }
-  );
+  fc
+    .array(
+      fc.oneof(
+        eventMapStateUpdate(stateIds),
+        alwaysStateUpdate(stateIds),
+        invokeStateUpdate()
+      ),
+      { maxLength: 3, depthIdentifier }
+    )
+    .chain((updates) =>
+      initialStateStateUpdate().map((intiialUpdate) =>
+        updates.concat(intiialUpdate as any)
+      )
+    );
 
 const atomicStateUpdate = (stateIds: Array<string>) =>
   standardStateUpdate(stateIds);
 
 const compoundStateUpdate = (stateIds: Array<string>) =>
-  standardStateUpdate(stateIds);
+  standardStateUpdate(stateIds)
+    .chain((updates) =>
+      onDoneStateUpdate(stateIds).map((onDone) =>
+        updates.concat([onDone as any])
+      )
+    )
+    .chain((updates) =>
+      initialStateStateUpdate().map((initialUpdate) =>
+        updates.concat([initialUpdate as any])
+      )
+    );
 
 const parallelStateUpdate = (stateIds: Array<string>) =>
   fc.array(
@@ -285,7 +320,7 @@ const finalStateUpdate = (_stateIds: Array<string>) =>
       invokes.concat(done ? ([done] as any) : [])
     ) as fc.Arbitrary<Array<Update>>;
 
-const stateUpdateForType = (stateIds: Array<string>, type: StateType) =>
+const stateUpdatesForType = (stateIds: Array<string>, type: StateType) =>
   ({
     atomic: atomicStateUpdate,
     compound: compoundStateUpdate,
@@ -370,49 +405,55 @@ export const arbitraryMachine: fc.Arbitrary<{
   actions: Array<string>;
   services: Array<string>;
   states: Array<string>;
-}> = fc
-  .array(machineDescriptorArbitrary, { minLength: 1 })
-  .chain((stateDescriptors) => {
-    const pathsByStateNames = new Map<
-      string,
-      { path: Array<string>; type: StateType }
-    >();
-    const states = createStates([], pathsByStateNames, stateDescriptors);
-    const rootState = {
-      states,
-    };
-    const stateIds = Array.from(pathsByStateNames.keys());
+}> = machineDescriptorArbitrary.chain((stateDescriptor) => {
+  const pathsByStateNames = new Map<
+    string,
+    { path: Array<string>; type: StateType }
+  >();
+  const rootId = stateDescriptor[1];
+  const rootType = stateDescriptor[0];
+  pathsByStateNames.set(rootId, { path: [rootId], type: rootType });
+  const states = createStates([rootId], pathsByStateNames, stateDescriptor[2]);
+  const rootState = {
+    type: rootType,
+    id: rootId,
+    states,
+  };
+  const stateIds = Array.from(pathsByStateNames.keys()).filter(
+    (id) => id !== rootId
+  );
 
-    return fc
-      .tuple(
-        ...Array.from(pathsByStateNames.values()).map(({ path, type }) => {
-          return fc.tuple(
-            fc.constant(path),
-            stateUpdateForType(stateIds, type)
-          );
-        })
-      )
-      .map((pathsAndUpdates) => {
-        return pathsAndUpdates.reduce(
-          (updateState: UpdateState, [path, updates]) =>
-            applyInPath(updateState, path, updates),
-          {
-            state: rootState,
-            events: [],
-            conditions: [],
-            actions: [],
-            services: [],
-          }
-        );
+  return fc
+    .tuple(
+      ...Array.from(pathsByStateNames.values()).map(({ path, type }) => {
+        return fc.tuple(fc.constant(path), stateUpdatesForType(stateIds, type));
       })
-      .map(({ events, conditions, actions, services, state: machine }) => ({
+    )
+    .map((pathsAndUpdates) => {
+      return pathsAndUpdates.reduce(
+        (updateState: UpdateState, [path, updates]) =>
+          applyInPath(updateState, path, updates),
+        {
+          state: { states: { [rootId]: rootState } },
+          events: [],
+          conditions: [],
+          actions: [],
+          services: [],
+        }
+      );
+    })
+    .map(({ events, conditions, actions, services, state }) => {
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const { type: _, ...machine } = state.states![rootId];
+      return {
         machine,
         events: dedup(events),
         conditions: dedup(conditions),
         actions: dedup(actions),
         services: dedup(services),
         states: stateIds,
-      }));
-  }) as fc.Arbitrary<any>;
+      };
+    });
+}) as fc.Arbitrary<any>;
 
 const dedup = <T>(items: Array<T>): Array<T> => Array.from(new Set(items));
