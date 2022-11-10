@@ -20,6 +20,10 @@ Once your logic is data, you can live out every lisp programmer's dream and writ
 That's where f-of-xstate comes in.
 We aim to provide a set of utilities to make that easy.
 
+# Quickstart
+
+You can play around with f-of-xstate in your browser in [this codesandbox](https://codesandbox.io/s/f-of-xstate-example-zkkoj2?file=/src/App.js).
+
 # Installation
 
 ```bash
