@@ -7,5 +7,6 @@
   },
   "navigationLinks": {
     "Simply Stated": "https://www.simplystated.dev",
-  }
+  },
+  "treatWarningsAsErrors": true
 }
