@@ -1,6 +1,6 @@
 {
   "name": "@simplystated/f-of-xstate",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Tools for operating on xstate state machines as data, by Simply Stated",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
