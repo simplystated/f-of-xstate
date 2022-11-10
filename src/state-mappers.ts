@@ -1,11 +1,5 @@
-import {
-  ActionObject,
-  EventObject,
-  StateMachine,
-  StateNode,
-  TransitionDefinitionMap,
-} from "xstate";
-import { MappableNodeDefinition } from "./map-states";
+import { ActionObject, EventObject, StateSchema } from "xstate";
+import { UpdatableNodeDefinition } from "./map-states";
 
 /**
  * Produces a mapper to be used with {@link mapStates} to append
@@ -32,26 +26,16 @@ import { MappableNodeDefinition } from "./map-states";
 export const appendActionsToAllTransitions =
   <
     TContext,
+    TStateSchema extends StateSchema<any>,
     TEvent extends EventObject,
-    Action extends ActionObject<TContext, TEvent>,
-    T extends
-      | StateNode<TContext, any, TEvent, any, any, any>
-      | StateMachine<TContext, any, TEvent, any, any, any, any>
+    Action extends ActionObject<TContext, TEvent>
   >(
     actions: Array<Action>
   ) =>
-  (state: MappableNodeDefinition<T["definition"]>): T["config"] => ({
-    ...state,
-    on: Object.keys(state.on).reduce(
-      (on, stateKey) => ({
-        ...on,
-        [stateKey]: (state.on as TransitionDefinitionMap<TContext, any>)[
-          stateKey
-        ].map((transition) => ({
-          ...transition,
-          actions: transition.actions.concat(actions),
-        })),
-      }),
-      {}
-    ),
-  });
+  (
+    state: UpdatableNodeDefinition<TContext, TStateSchema, TEvent>
+  ): UpdatableNodeDefinition<TContext, TStateSchema, TEvent> =>
+    state.transformTransitions((transition) => ({
+      ...transition,
+      actions: transition.actions.concat(actions),
+    }));

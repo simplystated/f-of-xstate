@@ -1,5 +1,11 @@
 import * as fc from "fast-check";
-import { createMachine, StateNodeConfig } from "xstate";
+import {
+  assign,
+  createMachine,
+  interpret,
+  MachineConfig,
+  StateNodeConfig,
+} from "xstate";
 import { arbitraryMachine } from "../src/arbitrary-machine";
 import { getAllActions } from "../src/get-all-actions";
 import { getAllConditions } from "../src/get-all-conditions";
@@ -25,10 +31,7 @@ describe("mapStates", () => {
             ...machine,
             predictableActionArguments: true,
           });
-          const mapped = mapStates(m, (node) => ({
-            ...node,
-            invoke: [],
-          }));
+          const mapped = mapStates(m, (node) => node.clearInvocations());
           const mappedMachine = createMachine({
             ...mapped,
             predictableActionArguments: true,
@@ -99,5 +102,161 @@ describe("mapStates", () => {
       }),
       { numRuns: 500 }
     );
+  });
+});
+
+describe("comprehensive example", () => {
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
+  it("should work with identity mapper", async () => {
+    const warn = jest.spyOn(global.console, "warn");
+    const error = jest.spyOn(global.console, "error");
+
+    const machineConfig = {
+      predictableActionArguments: true,
+      initial: "a",
+      states: {
+        a: {
+          on: {
+            next: {
+              target: "a2",
+              actions: "doSomething",
+              cond: () => true,
+            },
+          },
+        },
+        a2: {
+          entry: "doSomething",
+          always: [
+            { target: "b", cond: "isTrue" },
+            { target: "c", cond: () => false },
+          ],
+        },
+        b: {
+          type: "parallel",
+          onDone: "c",
+          exit: "doSomethingElse",
+          states: {
+            b_1: {
+              initial: "b_1_a",
+              states: {
+                b_1_a: {
+                  on: {
+                    "*": {
+                      target: "b_1_b",
+                      actions: assign({
+                        hello: "world",
+                      }),
+                    },
+                  },
+                },
+                b_1_b: {
+                  type: "final",
+                },
+              },
+            },
+            b_2: {
+              initial: "b_2_a",
+              states: {
+                b_2_a: {
+                  on: {
+                    next: "b_2_b",
+                  },
+                },
+                b_2_b: {
+                  on: {
+                    next: "b_2_c",
+                  },
+                },
+                b_2_c: {
+                  type: "final",
+                },
+              },
+            },
+          },
+        },
+        c: {
+          entry: {
+            type: "validateMeta",
+            meta: {
+              hello: "there",
+            },
+          },
+          after: {
+            2: {
+              target: "d",
+              actions: assign({
+                hi: "world",
+              }),
+            },
+          },
+        },
+        d: {
+          invoke: {
+            src: () => new Promise((resolve) => resolve("hi")),
+            onDone: "e",
+          },
+        },
+        e: {
+          invoke: {
+            src: "promise",
+            onError: "f",
+          },
+        },
+        f: {},
+      },
+    } as MachineConfig<any, any, any>;
+
+    const machine = createMachine(
+      mapStates(createMachine(machineConfig).withContext({}), (node) => node)
+    );
+
+    const doSomethingAction = jest.fn();
+    const doSomethingElseAction = jest.fn();
+    const failedPromiseService = jest.fn(
+      () => new Promise((_, reject) => reject("bad"))
+    );
+    const validateMetaAction = jest.fn(
+      (_ctx: any, _evt: any, meta: any) => meta.action.meta.hello === "there"
+    );
+
+    const service = interpret(
+      machine.withConfig({
+        services: {
+          promise: failedPromiseService,
+        },
+        actions: {
+          doSomething: doSomethingAction,
+          doSomethingElse: doSomethingElseAction,
+          validateMeta: validateMetaAction,
+        },
+        guards: {
+          isTrue: () => true,
+        },
+      })
+    ).start();
+
+    for (let i = 0; i < 10; ++i) {
+      service.send("next");
+    }
+
+    await new Promise((resolve) => setTimeout(resolve, 500));
+
+    expect(service.getSnapshot().matches("f")).toBe(true);
+
+    expect(doSomethingAction).toHaveBeenCalledTimes(2);
+    expect(doSomethingElseAction).toHaveBeenCalledTimes(1);
+    expect(failedPromiseService).toHaveBeenCalledTimes(1);
+    expect(validateMetaAction).toHaveBeenCalledTimes(1);
+    expect(validateMetaAction).toHaveLastReturnedWith(true);
+
+    try {
+      expect(warn).not.toHaveBeenCalled();
+      expect(error).not.toHaveBeenCalled();
+    } finally {
+      jest.clearAllMocks();
+    }
   });
 });
