@@ -31,7 +31,7 @@ describe("mapStates", () => {
             ...machine,
             predictableActionArguments: true,
           });
-          const mapped = mapStates(m, (node) => node.clearInvocations());
+          const mapped = mapStates(m, (node) => ({ ...node, invoke: [] }));
           const mappedMachine = createMachine({
             ...mapped,
             predictableActionArguments: true,

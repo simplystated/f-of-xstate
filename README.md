@@ -52,6 +52,13 @@ You can import it as:
 import { arbitraryMachine } from "@simplystated/f-of-xstate/dist/arbitrary-machine"
 ```
 
+One *highly* useful thing to do is to open a terminal and look at a few of these:
+```typescript
+import { arbitraryMachine } from "@simplystated/f-of-xstate/dist/arbitrary-machine"
+import * as fc from "fast-check";
+console.log(JSON.stringify(fc.sample(arbitraryMachine, 5), null, 2));
+```
+
 # Querying
 
 Given a `StateMachine` (e.g. something returned from XState's `createMachine`), you can query for the following, each of which walks the tree of state nodes and returns an array of all items encountered:
@@ -70,21 +77,28 @@ See:
  - [`mapStates`](https://simplystated.github.io/f-of-xstate/functions/index.mapStates.html)
 
 f-of-xstate also provides some utility mappers for common transformations that can be used with `mapStates`:
+ - [`filterMapStates`](https://simplystated.github.io/f-of-xstate/functions/index.filterMapStates.html)
+ - [`mapTransitions`](https://simplystated.github.io/f-of-xstate/functions/index.mapTransitions.html)
+ - [`filterTransitions`](https://simplystated.github.io/f-of-xstate/functions/index.filterTransitions.html)
+ - [`appendTransitions`](https://simplystated.github.io/f-of-xstate/functions/index.appendTransitions.html)
  - [`appendActionsToAllTransitions`](https://simplystated.github.io/f-of-xstate/functions/index.appendActionsToAllTransitions.html)
 
 Example:
 
 ```typescript
 import { createMachine, actions } from "xstate";
-import { mapStates, appendActionsToAllTransitions } from "@simplystated/f-of-xstate";
+import { mapStates, filterMapStates, appendActionsToAllTransitions } from "@simplystated/f-of-xstate";
 const machine = createMachine(...);
 const config = mapStates(
   machine,
-  appendActionsToAllTransitions([
-    actions.log((_, evt) => `Hello ${evt.type}`)
-  ])
+  filterMapStates(
+    (state) => state.id === "stateToLog",
+    appendActionsToAllTransitions([
+      actions.log((_, evt) => `Hello ${evt.type}`)
+    ])
+  )
 );
-// The updated machine will now log `Hello <event>` for every event.
+// The updated machine will now log `Hello <event>` for every event on the "stateToLog" state.
 const updatedMachine = createMachine(config);
 ```
 
