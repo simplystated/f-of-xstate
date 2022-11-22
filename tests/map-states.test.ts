@@ -103,6 +103,43 @@ describe("mapStates", () => {
       { numRuns: 500 }
     );
   });
+
+  it("should provide correct targets and target ids", () => {
+    const warn = jest.spyOn(global.console, "warn");
+    const error = jest.spyOn(global.console, "error");
+
+    fc.assert(
+      fc.property(arbitraryMachine, ({ machine }) => {
+        const m = createMachine({
+          ...machine,
+          predictableActionArguments: true,
+        });
+        const mapped = mapStates(m, (node) => {
+          node.transitions.forEach((transition) =>
+            expect(transition.target.join(",")).toEqual(
+              transition.targetIds.map((i) => `#${i}`).join(",")
+            )
+          );
+          return node;
+        });
+        createMachine({
+          ...mapped,
+          predictableActionArguments: true,
+        });
+
+        // we don't want to create machine configs that has warnings from a machine config that didn't have warnings.
+        try {
+          expect(warn).not.toHaveBeenCalled();
+          expect(error).not.toHaveBeenCalled();
+        } finally {
+          jest.clearAllMocks();
+        }
+
+        return true;
+      }),
+      { numRuns: 500 }
+    );
+  });
 });
 
 describe("comprehensive example", () => {

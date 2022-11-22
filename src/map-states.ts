@@ -30,6 +30,8 @@ const transitionDefinitionToStructuredSourceConfig = <
   // we are mapping over our state nodes so we cannot leave old
   // state nodes in our target. just use their ids.
   target: transition.target?.map((target) => `#${target.id}`) ?? [],
+  // but make it easy to access the actual id of the target
+  targetIds: transition.target?.map((target) => target.id) ?? [],
 });
 
 /**
@@ -79,7 +81,7 @@ export type StructuredTransformedStateNodeConfig<
   TEvent extends EventObject
 > = Omit<
   StructuredSourceStateNodeConfig<TContext, TStateSchema, TEvent>,
-  "stateDefinitions"
+  "stateDefinitions" | "transitions"
 > & {
   states?: Record<
     string,
@@ -87,28 +89,44 @@ export type StructuredTransformedStateNodeConfig<
       StructuredTransformedStateNodeConfig<TContext, TStateSchema, TEvent>
     >
   >;
+  transitions: Array<StructuredTransformedTransitionConfig<TContext, TEvent>>;
 };
 
 /**
  * A hybrid between an XState `TransitionConfig` and a `TransitionDefinition`.
  * `TransitionDefinition`s are unsuitable for mapping operations because they
  * represent targets (and sources) as StateNodes, which are likely about to be
- * changed. Instead, we ensure targets are represented as state ids and we
- * remove sources, which are obvious from context.
+ * changed. Instead, we ensure targets are represented as state id references
+ * and we remove sources, which are obvious from context.
  */
 export interface StructuredTransitionConfig<
   TContext,
   TEvent extends EventObject
 > extends TransitionConfig<TContext, TEvent> {
+  /** The type of the event that will trigger this transition. */
   event: TEvent["type"];
+  /** The condtion, if any guarding this transition. */
   cond?: Guard<TContext, TEvent>;
+  /** The actions to execute while taking this transition. */
   actions: Array<ActionObject<TContext, TEvent>>;
+  /** The in-state guard guarding this transition. */
   in?: StateValue;
+  /** Is this an internal transition. */
   internal?: boolean;
+  /** The array of target state references (e.g. "#(machine).myState"). */
   target: Array<string>;
+  /** The array of target state ids (e.g. "(machine).myState"). */
+  targetIds: Array<string>;
+  /** The metadata associated with this transition. */
   meta?: Record<string, any>;
+  /** The description associated with this transition. */
   description?: string;
 }
+
+export type StructuredTransformedTransitionConfig<
+  TContext,
+  TEvent extends EventObject
+> = Omit<StructuredTransitionConfig<TContext, TEvent>, "targetIds">;
 
 const toStructuredSourceStateNodeConfig = <
   TContext,

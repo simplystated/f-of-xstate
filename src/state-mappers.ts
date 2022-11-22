@@ -4,6 +4,7 @@ import {
   StatePath,
   StructuredSourceStateNodeConfig,
   StructuredTransformedStateNodeConfig,
+  StructuredTransformedTransitionConfig,
   StructuredTransitionConfig,
 } from "./map-states";
 
@@ -73,13 +74,18 @@ export const appendTransitions =
   <TContext, TStateSchema extends StateSchema<any>, TEvent extends EventObject>(
     transitionsGetter: (
       state: StructuredSourceStateNodeConfig<TContext, TStateSchema, TEvent>
-    ) => Array<StructuredTransitionConfig<TContext, TEvent>>
+    ) => Array<StructuredTransformedTransitionConfig<TContext, TEvent>>
   ) =>
   (
     state: StructuredSourceStateNodeConfig<TContext, TStateSchema, TEvent>
   ): StructuredTransformedStateNodeConfig<TContext, TStateSchema, TEvent> => ({
     ...state,
-    transitions: state.transitions.concat(transitionsGetter(state)),
+    transitions: (
+      state.transitions as StructuredTransformedTransitionConfig<
+        TContext,
+        TEvent
+      >[]
+    ).concat(transitionsGetter(state)),
   });
 
 /**
