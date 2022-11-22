@@ -259,4 +259,50 @@ describe("comprehensive example", () => {
       jest.clearAllMocks();
     }
   });
+
+  it("should work with child states returned by the mapper", async () => {
+    const warn = jest.spyOn(global.console, "warn");
+    const error = jest.spyOn(global.console, "error");
+
+    const machineConfig = {
+      predictableActionArguments: true,
+      id: "m",
+      initial: "a",
+      states: {
+        a: {
+          on: {
+            next: {
+              target: ".a2",
+            },
+          },
+          states: {
+            a2: {},
+          },
+        },
+      },
+    } as MachineConfig<any, any, any>;
+
+    const machine = createMachine(
+      mapStates(createMachine(machineConfig).withContext({}), (node) => ({
+        ...node,
+        states:
+          node.id === "m"
+            ? void 0
+            : {
+                subState: {},
+              },
+      }))
+    );
+
+    expect(new Set(getAllStates(machine).map((s) => s.id))).toEqual(
+      new Set(["m", "m.a", "m.a.a2", "m.a.subState", "m.a.a2.subState"])
+    );
+
+    try {
+      expect(warn).not.toHaveBeenCalled();
+      expect(error).not.toHaveBeenCalled();
+    } finally {
+      jest.clearAllMocks();
+    }
+  });
 });
