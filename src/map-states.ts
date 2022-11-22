@@ -70,6 +70,8 @@ export type StructuredSourceStateNodeConfig<
  *
  * All `StructuredSourceStateNodeConfig`s are acceptable as `StructuredTransformedStateNodeConfig`s
  * but the intention is that mappers will make some modifications to the returned value.
+ *
+ * NOTE: mappers may only *add* states via the `states` property.
  */
 export type StructuredTransformedStateNodeConfig<
   TContext,
@@ -81,7 +83,9 @@ export type StructuredTransformedStateNodeConfig<
 > & {
   states?: Record<
     string,
-    StructuredTransformedStateNodeConfig<TContext, TStateSchema, TEvent>
+    Partial<
+      StructuredTransformedStateNodeConfig<TContext, TStateSchema, TEvent>
+    >
   >;
 };
 
@@ -338,7 +342,7 @@ const mapStatesWithPathFromDefinition = <
         mapper
       ),
     }),
-    {} as any
+    newState.states ?? ({} as any)
   );
 
   return newState;
